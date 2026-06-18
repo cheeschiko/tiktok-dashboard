@@ -1,0 +1,45 @@
+{
+  "updated_at": "2026-06-18T10:00:00+09:00",
+  "shop_name": "에센허브 US",
+  "currency": "USD",
+  "fx_rate": 1378.5,
+  "fx_date": "2026-06-18",
+  "summary": {
+    "period_start": "2026-06-01",
+    "period_end": "2026-06-17",
+    "month_net_sales_usd": 18452.34,
+    "month_orders": 412,
+    "month_items_sold": 689,
+    "today_net_sales_usd": 1043.22,
+    "days_elapsed": 17,
+    "days_in_month": 30
+  },
+  "daily": [
+    { "date": "2026-06-01", "net_sales_usd": 820.5, "orders": 18 },
+    { "date": "2026-06-02", "net_sales_usd": 654.2, "orders": 15 },
+    { "date": "2026-06-03", "net_sales_usd": 1120.8, "orders": 24 },
+    { "date": "2026-06-04", "net_sales_usd": 980.0, "orders": 21 },
+    { "date": "2026-06-05", "net_sales_usd": 1340.6, "orders": 29 },
+    { "date": "2026-06-06", "net_sales_usd": 1560.1, "orders": 33 },
+    { "date": "2026-06-07", "net_sales_usd": 1410.4, "orders": 30 },
+    { "date": "2026-06-08", "net_sales_usd": 890.3, "orders": 19 },
+    { "date": "2026-06-09", "net_sales_usd": 760.7, "orders": 17 },
+    { "date": "2026-06-10", "net_sales_usd": 1205.5, "orders": 26 },
+    { "date": "2026-06-11", "net_sales_usd": 1330.9, "orders": 28 },
+    { "date": "2026-06-12", "net_sales_usd": 1488.2, "orders": 31 },
+    { "date": "2026-06-13", "net_sales_usd": 1620.0, "orders": 35 },
+    { "date": "2026-06-14", "net_sales_usd": 1390.4, "orders": 30 },
+    { "date": "2026-06-15", "net_sales_usd": 940.8, "orders": 20 },
+    { "date": "2026-06-16", "net_sales_usd": 855.2, "orders": 18 },
+    { "date": "2026-06-17", "net_sales_usd": 1043.22, "orders": 22 }
+  ],
+  "products": [
+    { "name": "EssenHerb Vitamin C Brightening Serum 30ml", "sku": "EH-VCS-30", "gmv_usd": 5240.5, "orders": 142, "items_sold": 198, "stock": 320 },
+    { "name": "EssenHerb Hyaluronic Acid Moisturizer 50ml", "sku": "EH-HAM-50", "gmv_usd": 3890.2, "orders": 98, "items_sold": 121, "stock": 45 },
+    { "name": "EssenHerb Retinol Night Cream 50ml", "sku": "EH-RNC-50", "gmv_usd": 2980.0, "orders": 74, "items_sold": 88, "stock": 12 },
+    { "name": "EssenHerb Centella Soothing Toner 200ml", "sku": "EH-CST-200", "gmv_usd": 2105.8, "orders": 60, "items_sold": 95, "stock": 210 },
+    { "name": "EssenHerb Niacinamide Pore Serum 30ml", "sku": "EH-NPS-30", "gmv_usd": 1760.4, "orders": 41, "items_sold": 52, "stock": 0 },
+    { "name": "EssenHerb Snail Mucin Essence 100ml", "sku": "EH-SME-100", "gmv_usd": 1320.0, "orders": 33, "items_sold": 40, "stock": 88 },
+    { "name": "EssenHerb Cica Cream Travel Kit", "sku": "EH-CCT-KIT", "gmv_usd": 655.4, "orders": 18, "items_sold": 22, "stock": 33 }
+  ]
+}
