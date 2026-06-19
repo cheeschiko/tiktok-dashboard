@@ -117,6 +117,27 @@
   .pill.out { background: rgba(255,77,79,.15);    color: var(--bad); }
   .pill.na  { background: rgba(148,160,176,.12); color: var(--txt-dim); }
 
+  /* 채널 범례 */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 14px; }
+  .legend .item { display: flex; align-items: center; gap: 7px; font-size: 13px; }
+  .legend .swatch { width: 11px; height: 11px; border-radius: 3px; }
+  .legend .v { color: var(--txt-dim); margin-left: 2px; }
+
+  /* 손익 표 */
+  .range-tag { font-size: 12px; color: var(--txt-dim); font-weight: 400; margin-left: 6px; }
+  .fin-row { display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .fin-row .k { color: var(--txt-dim); }
+  .fin-row .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .fin-row.head .k, .fin-row.head .v { color: var(--txt); font-weight: 700; font-size: 15px; }
+  .fin-row.sub { padding: 6px 0 6px 14px; font-size: 13px; border-bottom: none; }
+  .fin-row.sub .k { color: #7e8a99; }
+  .fin-row.sub .v { font-weight: 500; color: var(--txt-dim); }
+  .fin-row .neg { color: var(--bad); }
+  .fin-row .pos { color: var(--good); }
+  .fin-group { margin-bottom: 8px; }
+  .fin-note { color: var(--txt-dim); font-size: 11px; margin-top: 10px; line-height: 1.5; }
+
   .alert {
     display: flex; align-items: center; gap: 8px;
     background: rgba(245,166,35,.1); border: 1px solid rgba(245,166,35,.3);
@@ -164,6 +185,19 @@
     </div>
   </div>
 
+  <!-- 채널별 매출 + 손익 -->
+  <div class="grid panels" id="midSection">
+    <div class="panel" id="channelPanel">
+      <h2>📺 채널별 매출 (GMV 귀속)</h2>
+      <div class="chart-wrap" style="height:240px"><canvas id="channelChart"></canvas></div>
+      <div id="channelLegend" class="legend"></div>
+    </div>
+    <div class="panel" id="financePanel">
+      <h2>💵 정산 · 손익 분석 <span id="finRange" class="range-tag"></span></h2>
+      <div id="financeBody"></div>
+    </div>
+  </div>
+
   <!-- 제품 + 재고 표 -->
   <div class="panel table-panel">
     <h2>📦 제품별 판매 · 재고 현황</h2>
@@ -187,7 +221,7 @@
 
 <script>
 const LOW_STOCK = 30;     // 재고 부족 기준
-let trendChart, prodChart;
+let trendChart, prodChart, channelChart;
 
 // ---------- 숫자 포맷 ----------
 const usd = n => "$" + Number(n||0).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -245,6 +279,8 @@ function render(d) {
   const cards = [
     { label:"💰 이번달 순매출", value: usd(s.month_net_sales_usd),
       sub: krwTotal ? "약 " + krw(krwTotal) : "", accent:true },
+    ...(s.month_gmv_usd ? [{ label:"🛒 총매출 (GMV)", value: usd(s.month_gmv_usd),
+      sub: fx ? "약 " + krw(s.month_gmv_usd*fx) : "" }] : []),
     { label:"🧾 오더수", value: num(s.month_orders) + "건",
       sub: s.month_items_sold!=null ? "판매수량 " + num(s.month_items_sold) + "개" : "" },
     { label:"📅 오늘 매출", value: usd(s.today_net_sales_usd||0),
@@ -297,6 +333,10 @@ function render(d) {
     options: { ...chartOpts("$"), indexAxis: "y" }
   });
 
+  // 채널별 매출 + 손익
+  renderChannels(d);
+  renderFinance(d);
+
   // 제품 표
   const rows = [...prods].sort((a,b)=>(b.gmv_usd||0)-(a.gmv_usd||0)).map(p => {
     let badge = `<span class="pill na">미연동</span>`;
@@ -318,6 +358,68 @@ function render(d) {
 
   document.getElementById("footer").textContent =
     `TikTok Shop 대시보드 · ${prods.length}개 제품 · 자동 업데이트`;
+}
+
+// ── 채널별 매출 ──
+function renderChannels(d) {
+  const c = d.channels;
+  const panel = document.getElementById("channelPanel");
+  if (!c) { panel.style.display = "none"; return; }
+  panel.style.display = "";
+  const items = [
+    { key:"seller_live",   label:"Seller LIVE",  color:"#fe2c55" },
+    { key:"seller_video",  label:"Seller 영상",  color:"#ff7aa0" },
+    { key:"creator",       label:"크리에이터(제휴)", color:"#25f4ee" },
+    { key:"product_card",  label:"상품카드",     color:"#9b8cff" },
+    { key:"other",         label:"기타",         color:"#5a6472" },
+  ].map(x => ({...x, val: c[x.key]||0})).filter(x => x.val > 0);
+  const sum = items.reduce((a,b)=>a+b.val,0) || 1;
+
+  if (channelChart) channelChart.destroy();
+  channelChart = new Chart(document.getElementById("channelChart"), {
+    type: "doughnut",
+    data: { labels: items.map(x=>x.label),
+      datasets:[{ data: items.map(x=>x.val), backgroundColor: items.map(x=>x.color), borderWidth:0 }] },
+    options: { responsive:true, maintainAspectRatio:false, cutout:"62%",
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ label: c2 => " "+usd(c2.parsed)+" ("+(c2.parsed/sum*100).toFixed(1)+"%)" } } } }
+  });
+  document.getElementById("channelLegend").innerHTML = items.map(x =>
+    `<div class="item"><span class="swatch" style="background:${x.color}"></span>${x.label}
+       <span class="v">${usd(x.val)} · ${(x.val/sum*100).toFixed(0)}%</span></div>`).join("");
+}
+
+// ── 정산 · 손익 ──
+function renderFinance(d) {
+  const f = d.finance;
+  const panel = document.getElementById("financePanel");
+  if (!f || !f.gross_sales) { panel.style.display = "none"; return; }
+  panel.style.display = "";
+  document.getElementById("finRange").textContent = f.range_note ? "("+f.range_note+")" : "";
+
+  const money = (n, signed) => {
+    const cls = n < 0 ? "neg" : (signed && n > 0 ? "pos" : "");
+    const s = (n<0?"-$":"$") + Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+    return `<span class="v ${cls}">${s}</span>`;
+  };
+  const row = (k, n, cls="") => `<div class="fin-row ${cls}"><span class="k">${k}</span>${money(n, cls==="head")}</div>`;
+  const sub = (k, n) => `<div class="fin-row sub"><span class="k">${k}</span>${money(n)}</div>`;
+
+  let html = `<div class="fin-group">`;
+  html += row("총매출 (Gross)", f.gross_sales);
+  if (f.seller_discount) html += sub("셀러 할인", f.seller_discount);
+  if (f.refund) html += sub("환불", f.refund);
+  html += row("순매출 (Net)", f.net_product_sales, "head");
+  html += `</div><div class="fin-group">`;
+  html += row("총 주문원가", f.total_order_cost, "head");
+  (f.cost_items||[]).forEach(ci => { html += sub(ci.name, ci.amount); });
+  html += `</div><div class="fin-group">`;
+  html += row("기여이익 (Contribution)", f.contribution_margin, "head");
+  if (f.settled_amount != null) html += row("정산액 (Settled)", f.settled_amount);
+  html += `</div>`;
+  if (f.ad_promo_spend) html += row("📣 광고·프로모션 비용", f.ad_promo_spend);
+  html += `<div class="fin-note">※ TikTok Shop 거래 기준 손익. 제품원가(COGS)·외부 광고비는 미포함.</div>`;
+  document.getElementById("financeBody").innerHTML = html;
 }
 
 function shorten(s){ return s.length>22 ? s.slice(0,22)+"…" : s; }

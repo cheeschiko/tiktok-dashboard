@@ -8,11 +8,39 @@
     "period_start": "2026-06-01",
     "period_end": "2026-06-17",
     "month_net_sales_usd": 18452.34,
+    "month_gmv_usd": 21980.5,
     "month_orders": 412,
     "month_items_sold": 689,
     "today_net_sales_usd": 1043.22,
     "days_elapsed": 17,
     "days_in_month": 30
+  },
+  "channels": {
+    "total_gmv": 21980.5,
+    "seller_live": 8420.3,
+    "seller_video": 5210.6,
+    "creator": 4980.4,
+    "product_card": 2890.2,
+    "other": 479.0
+  },
+  "finance": {
+    "range_note": "이번달",
+    "gross_sales": 23950.8,
+    "seller_discount": -1850.5,
+    "refund": -1010.4,
+    "net_product_sales": 18452.34,
+    "total_order_cost": -6320.75,
+    "contribution_margin": 12131.59,
+    "settled_amount": 11820.4,
+    "ad_promo_spend": 1240.6,
+    "cost_items": [
+      { "name": "배송비 (TikTok Shop)", "amount": -3980.15 },
+      { "name": "제휴 수수료", "amount": -890.83 },
+      { "name": "프로모션 수수료", "amount": -740.6 },
+      { "name": "제휴 광고 수수료", "amount": -420.0 },
+      { "name": "캠페인 서비스 수수료", "amount": -80.0 },
+      { "name": "환불 처리 수수료", "amount": -28.17 }
+    ]
   },
   "daily": [
     { "date": "2026-06-01", "net_sales_usd": 820.5, "orders": 18 },
