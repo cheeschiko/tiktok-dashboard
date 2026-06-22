@@ -152,10 +152,11 @@
 <!-- 잠금 화면 -->
 <div id="lock">
   <div class="lock-card">
-    <h1>🔒 TikTok Shop 대시보드</h1>
-    <p>비밀번호를 입력하면 데이터가 복호화됩니다.</p>
-    <input id="pw" type="password" placeholder="비밀번호" autocomplete="off" />
-    <button id="unlock">열기</button>
+    <h1>에센허브 내부 대시보드</h1>
+    <p>사내 임직원 전용 페이지입니다. 열람 코드를 입력하세요.</p>
+    <input id="pw" type="text" inputmode="text" autocomplete="off" placeholder="열람 코드"
+           style="-webkit-text-security:disc; text-security:disc;" />
+    <button id="unlock">열람</button>
     <div class="lock-err" id="lockErr"></div>
   </div>
 </div>
