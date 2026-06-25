@@ -67,7 +67,7 @@
   #app { display: none; max-width: 1200px; margin: 0 auto; padding: 24px 18px 60px; }
   header.top {
     display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
-    margin-bottom: 22px;
+    margin-bottom: 18px;
   }
   .logo {
     display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px;
@@ -77,6 +77,30 @@
   .top .spacer { flex: 1; }
   .meta { color: var(--txt-dim); font-size: 13px; text-align: right; line-height: 1.5; }
   .meta b { color: var(--txt); }
+
+  /* ---------- 기간 선택 툴바 ---------- */
+  .toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 12px 14px; margin-bottom: 18px;
+  }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .presets button {
+    background: var(--panel-2); color: var(--txt-dim); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer;
+    transition: .15s;
+  }
+  .presets button:hover { color: var(--txt); border-color: #3a4150; }
+  .presets button.active {
+    background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600;
+  }
+  .toolbar .spacer { flex: 1; }
+  .range { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--txt-dim); }
+  .range input[type=date] {
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--txt);
+    border-radius: 9px; padding: 7px 10px; font-size: 13px; color-scheme: dark;
+  }
+  .range input[type=date]:focus { outline: none; border-color: var(--accent-2); }
 
   .grid { display: grid; gap: 14px; }
   .cards { grid-template-columns: repeat(4, 1fr); margin-bottom: 16px; }
@@ -145,6 +169,8 @@
     color: var(--warn); padding: 10px 14px; border-radius: 12px;
     font-size: 13px; margin-bottom: 16px;
   }
+  .note { color: var(--txt-dim); font-size: 12px; margin-bottom: 14px; }
+  .empty { color: var(--txt-dim); font-size: 13px; text-align: center; padding: 30px 0; }
   .footer { color: var(--txt-dim); font-size: 12px; text-align: center; margin-top: 30px; }
 </style>
 </head>
@@ -170,6 +196,24 @@
     <div class="meta" id="meta"></div>
   </header>
 
+  <!-- 기간 선택 -->
+  <div class="toolbar">
+    <div class="presets" id="presets">
+      <button data-preset="today">오늘</button>
+      <button data-preset="7d">최근 7일</button>
+      <button data-preset="month" class="active">이번달</button>
+      <button data-preset="lastmonth">지난달</button>
+      <button data-preset="all">전체</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="range">
+      <input type="date" id="startDate" />
+      <span>~</span>
+      <input type="date" id="endDate" />
+    </div>
+  </div>
+
+  <div id="rangeNote"></div>
   <div id="alerts"></div>
 
   <!-- 요약 카드 -->
@@ -202,7 +246,7 @@
 
   <!-- 제품 + 재고 표 -->
   <div class="panel table-panel">
-    <h2>📦 제품별 판매 · 재고 현황</h2>
+    <h2>📦 제품별 판매 · 재고 현황 <span id="prodRange" class="range-tag"></span></h2>
     <table>
       <thead>
         <tr>
@@ -222,13 +266,20 @@
 </div>
 
 <script>
-const LOW_STOCK = 30;     // 재고 부족 기준
+let LOW_STOCK = 30;
+let DATA = null;                       // 전체 페이로드
 let trendChart, prodChart, channelChart;
+let activePreset = "month";
 
 // ---------- 숫자 포맷 ----------
 const usd = n => "$" + Number(n||0).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
 const krw = n => "₩" + Math.round(n||0).toLocaleString("ko-KR");
 const num = n => Number(n||0).toLocaleString("ko-KR");
+
+// ---------- 날짜 헬퍼 (로컬 타임존 영향 없이 문자열로) ----------
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const parseIso = s => { const [y,m,dd]=s.split("-").map(Number); return new Date(y, m-1, dd); };
+function addDays(s, n){ const d = parseIso(s); d.setDate(d.getDate()+n); return iso(d); }
 
 // ---------- 복호화 (AES-GCM / PBKDF2) ----------
 async function decryptPayload(enc, password) {
@@ -243,7 +294,6 @@ async function decryptPayload(enc, password) {
   return JSON.parse(new TextDecoder().decode(plain));
 }
 
-// ---------- 데이터 로딩 ----------
 async function tryFetch(path) {
   try { const r = await fetch(path, {cache:"no-store"}); if (r.ok) return await r.json(); }
   catch(e){}
@@ -251,44 +301,164 @@ async function tryFetch(path) {
 }
 
 async function loadData(password) {
-  // 1) 암호화 파일 우선
   const enc = await tryFetch("data.enc.json");
-  if (enc && enc.ct) {
-    return await decryptPayload(enc, password);   // 틀리면 throw → 잘못된 비번
-  }
-  // 2) 평문 (로컬 개발용)
+  if (enc && enc.ct) return await decryptPayload(enc, password);
   const plain = await tryFetch("data.json") || await tryFetch("data.sample.json");
   if (plain) return plain;
   throw new Error("데이터 파일을 찾을 수 없습니다.");
 }
 
-// ---------- 렌더링 ----------
-function render(d) {
-  document.getElementById("shopName").textContent = (d.shop_name||"TikTok Shop");
+// ---------- 기간 합산 ----------
+function dataDates() {
+  const ds = DATA.history.map(h => h.date).sort();
+  return { min: ds[0], max: DATA.today || ds[ds.length-1] };
+}
+
+function presetRange(preset) {
+  const { min, max } = dataDates();
+  const end = parseIso(max);
+  if (preset === "today")  return { start: max, end: max };
+  if (preset === "7d")     return { start: addDays(max, -6), end: max };
+  if (preset === "all")    return { start: min, end: max };
+  if (preset === "month")  return { start: iso(new Date(end.getFullYear(), end.getMonth(), 1)), end: max };
+  if (preset === "lastmonth") {
+    const firstThis = new Date(end.getFullYear(), end.getMonth(), 1);
+    const lastPrev  = new Date(firstThis.getTime() - 86400000);
+    const firstPrev = new Date(lastPrev.getFullYear(), lastPrev.getMonth(), 1);
+    return { start: iso(firstPrev), end: iso(lastPrev) };
+  }
+  return { start: iso(new Date(end.getFullYear(), end.getMonth(), 1)), end: max };
+}
+
+function aggregate(start, end) {
+  const days = DATA.history.filter(d => d.date >= start && d.date <= end);
+
+  // 순매출 일별 시리즈 + 합계 (finance 있는 날)
+  const netSeries = days.filter(d => d.net_sales_usd != null)
+                        .map(d => ({ date: d.date, net: d.net_sales_usd }))
+                        .sort((a,b) => a.date < b.date ? -1 : 1);
+  const netTotal = netSeries.reduce((a,b) => a + (b.net||0), 0);
+
+  // 손익 합계
+  const finDays = days.filter(d => d.finance);
+  let finance = null;
+  if (finDays.length) {
+    const sum = k => finDays.reduce((a,d) => a + (d.finance[k]||0), 0);
+    const costMap = {};
+    let settled = 0, hasSettled = false;
+    finDays.forEach(d => {
+      (d.finance.cost_items||[]).forEach(ci => { costMap[ci.name] = (costMap[ci.name]||0) + ci.amount; });
+      if (d.finance.settled_amount != null) { settled += d.finance.settled_amount; hasSettled = true; }
+    });
+    finance = {
+      gross_sales: r2(sum("gross_sales")),
+      seller_discount: r2(sum("seller_discount")),
+      refund: r2(sum("refund")),
+      net_product_sales: r2(sum("net_product_sales")),
+      total_order_cost: r2(sum("total_order_cost")),
+      contribution_margin: r2(sum("contribution_margin")),
+      ad_promo_spend: r2(sum("ad_promo_spend")),
+      settled_amount: hasSettled ? r2(settled) : null,
+      cost_items: Object.entries(costMap).map(([name,amount]) => ({name, amount: r2(amount)})),
+    };
+  }
+
+  // 제품별 합산 (products 있는 날)
+  const prodDays = days.filter(d => d.products && d.products.length);
+  const pmap = {};
+  prodDays.forEach(d => d.products.forEach(p => {
+    const e = pmap[p.name] || (pmap[p.name] = {
+      name: p.name, gmv_usd: 0, orders: 0, items_sold: 0,
+      ch_seller_live: 0, ch_seller_video: 0, ch_creator: 0, ch_product_card: 0 });
+    e.gmv_usd += p.gmv_usd||0; e.orders += p.orders||0; e.items_sold += p.items_sold||0;
+    e.ch_seller_live += p.ch_seller_live||0; e.ch_seller_video += p.ch_seller_video||0;
+    e.ch_creator += p.ch_creator||0; e.ch_product_card += p.ch_product_card||0;
+  }));
+  const products = Object.values(pmap).map(p => ({...p, gmv_usd: r2(p.gmv_usd)}));
+
+  // 채널 합산
+  const ch = { seller_live:0, seller_video:0, creator:0, product_card:0 };
+  products.forEach(p => {
+    ch.seller_live += p.ch_seller_live; ch.seller_video += p.ch_seller_video;
+    ch.creator += p.ch_creator; ch.product_card += p.ch_product_card;
+  });
+  const gmvTotal = products.reduce((a,p)=>a+p.gmv_usd, 0);
+  const channels = {
+    total_gmv: r2(gmvTotal),
+    seller_live: r2(ch.seller_live), seller_video: r2(ch.seller_video),
+    creator: r2(ch.creator), product_card: r2(ch.product_card),
+    other: r2(Math.max(gmvTotal - (ch.seller_live+ch.seller_video+ch.creator+ch.product_card), 0)),
+  };
+
+  return {
+    start, end, netSeries, netTotal: r2(netTotal),
+    finance, products, channels,
+    gmvTotal: r2(gmvTotal),
+    orders: products.reduce((a,p)=>a+p.orders, 0),
+    items: products.reduce((a,p)=>a+p.items_sold, 0),
+    hasProducts: prodDays.length > 0,
+    elapsed: netSeries.length,
+  };
+}
+const r2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+
+// ---------- 렌더 ----------
+function render(agg) {
+  const fx = DATA.fx_rate;
 
   // 메타
-  const fx = d.fx_rate;
-  const upd = d.updated_at ? new Date(d.updated_at).toLocaleString("ko-KR") : "-";
+  const upd = DATA.updated_at ? new Date(DATA.updated_at).toLocaleString("ko-KR") : "-";
   document.getElementById("meta").innerHTML =
-    `기간 <b>${d.summary.period_start} ~ ${d.summary.period_end}</b><br>` +
+    `선택 기간 <b>${agg.start} ~ ${agg.end}</b><br>` +
     (fx ? `환율 <b>${krw(fx)}/$</b> · ` : "") + `업데이트 ${upd}`;
 
+  // 제품 누적 시작 안내
+  const noteEl = document.getElementById("rangeNote");
+  if (DATA.product_accum_start && DATA.product_accum_start > agg.start) {
+    noteEl.className = "note";
+    noteEl.textContent =
+      `ℹ️ 제품별·채널·오더수는 ${DATA.product_accum_start}부터 누적됩니다. ` +
+      `그 이전 구간은 순매출·손익만 표시돼요. (선택 기간 내 제품 데이터: ` +
+      `${agg.hasProducts ? "있음" : "없음"})`;
+  } else { noteEl.className = ""; noteEl.textContent = ""; }
+
+  // 재고 알림 (현재고 기준, 기간 무관)
+  const sbn = DATA.stock_by_name || {};
+  const out = [], low = [];
+  Object.entries(sbn).forEach(([name, st]) => {
+    if (st == null) return;
+    if (st <= 0) out.push(name);
+    else if (st <= LOW_STOCK) low.push(`${name}(${st})`);
+  });
+  let alerts = "";
+  if (out.length) alerts += `<div class="alert" style="color:var(--bad);border-color:rgba(255,77,79,.3);background:rgba(255,77,79,.08)">⛔ 품절 ${out.length}건: ${out.join(", ")}</div>`;
+  if (low.length) alerts += `<div class="alert">⚠️ 재고 부족(${LOW_STOCK}개 이하) ${low.length}건: ${low.join(", ")}</div>`;
+  document.getElementById("alerts").innerHTML = alerts;
+
   // 카드
-  const s = d.summary;
-  const krwTotal = fx ? s.month_net_sales_usd * fx : null;
-  const dailyAvg = (s.days_elapsed && krwTotal) ? krwTotal / s.days_elapsed : null;
-  const projected = (dailyAvg && s.days_in_month) ? dailyAvg * s.days_in_month : null;
+  const krwNet = fx ? agg.netTotal * fx : null;
+  const dailyAvg = (agg.elapsed && krwNet) ? krwNet / agg.elapsed : null;
+  const end = parseIso(agg.end);
+  const isCurMonth = activePreset === "month";
+  const daysInMonth = new Date(end.getFullYear(), end.getMonth()+1, 0).getDate();
+  const projected = (isCurMonth && dailyAvg) ? dailyAvg * daysInMonth : null;
+
+  const todayNet = (() => {
+    const t = DATA.history.find(h => h.date === DATA.today);
+    return (t && t.date >= agg.start && t.date <= agg.end) ? (t.net_sales_usd||0) : null;
+  })();
+
   const cards = [
-    { label:"💰 이번달 순매출", value: usd(s.month_net_sales_usd),
-      sub: krwTotal ? "약 " + krw(krwTotal) : "", accent:true },
-    ...(s.month_gmv_usd ? [{ label:"🛒 총매출 (GMV)", value: usd(s.month_gmv_usd),
-      sub: fx ? "약 " + krw(s.month_gmv_usd*fx) : "" }] : []),
-    { label:"🧾 오더수", value: num(s.month_orders) + "건",
-      sub: s.month_items_sold!=null ? "판매수량 " + num(s.month_items_sold) + "개" : "" },
-    { label:"📅 오늘 매출", value: usd(s.today_net_sales_usd||0),
-      sub: fx ? "약 " + krw((s.today_net_sales_usd||0)*fx) : "" },
-    { label:"🎯 월마감 예상", value: projected ? krw(projected) : "-",
-      sub: dailyAvg ? "일평균 " + krw(dailyAvg) : "" },
+    { label:"💰 순매출", value: usd(agg.netTotal),
+      sub: krwNet ? "약 " + krw(krwNet) : "", accent:true },
+    { label:"🛒 총매출 (GMV)", value: agg.hasProducts ? usd(agg.gmvTotal) : "—",
+      sub: agg.hasProducts && fx ? "약 " + krw(agg.gmvTotal*fx) : (agg.hasProducts ? "" : "제품 누적 전") },
+    { label:"🧾 오더수", value: agg.hasProducts ? num(agg.orders) + "건" : "—",
+      sub: agg.hasProducts ? "판매수량 " + num(agg.items) + "개" : "제품 누적 전" },
+    projected
+      ? { label:"🎯 월마감 예상", value: krw(projected), sub: dailyAvg ? "일평균 " + krw(dailyAvg) : "" }
+      : { label:"📅 일평균 순매출", value: dailyAvg ? krw(dailyAvg) : "-",
+          sub: agg.elapsed ? `${agg.elapsed}일 기준` + (todayNet!=null ? ` · 오늘 ${usd(todayNet)}` : "") : "" },
   ];
   document.getElementById("cards").innerHTML = cards.map(c =>
     `<div class="card ${c.accent?'accent':''}">
@@ -297,76 +467,63 @@ function render(d) {
        <div class="sub">${c.sub||""}</div>
      </div>`).join("");
 
-  // 재고 알림
-  const prods = (d.products||[]);
-  const out = prods.filter(p => p.stock!=null && p.stock<=0);
-  const low = prods.filter(p => p.stock!=null && p.stock>0 && p.stock<=LOW_STOCK);
-  let alerts = "";
-  if (out.length) alerts += `<div class="alert" style="color:var(--bad);border-color:rgba(255,77,79,.3);background:rgba(255,77,79,.08)">⛔ 품절 ${out.length}건: ${out.map(p=>p.name).join(", ")}</div>`;
-  if (low.length) alerts += `<div class="alert">⚠️ 재고 부족(${LOW_STOCK}개 이하) ${low.length}건: ${low.map(p=>p.name+"("+p.stock+")").join(", ")}</div>`;
-  document.getElementById("alerts").innerHTML = alerts;
-
   // 일별 추이 차트
-  const daily = d.daily||[];
   if (trendChart) trendChart.destroy();
   trendChart = new Chart(document.getElementById("trendChart"), {
     type: "line",
     data: {
-      labels: daily.map(x => x.date.slice(5)),
-      datasets: [{
-        label: "순매출 ($)", data: daily.map(x => x.net_sales_usd),
+      labels: agg.netSeries.map(x => x.date.slice(5)),
+      datasets: [{ label: "순매출 ($)", data: agg.netSeries.map(x => x.net),
         borderColor: "#25f4ee", backgroundColor: "rgba(37,244,238,.12)",
-        fill: true, tension: .35, pointRadius: 2, borderWidth: 2,
-      }]
+        fill: true, tension: .35, pointRadius: 2, borderWidth: 2 }]
     },
     options: chartOpts("$")
   });
 
   // 제품 TOP 차트
-  const top = [...prods].sort((a,b)=>(b.gmv_usd||0)-(a.gmv_usd||0)).slice(0,7);
+  const top = [...agg.products].sort((a,b)=>(b.gmv_usd||0)-(a.gmv_usd||0)).slice(0,7);
   if (prodChart) prodChart.destroy();
   prodChart = new Chart(document.getElementById("prodChart"), {
     type: "bar",
-    data: {
-      labels: top.map(p => shorten(p.name)),
+    data: { labels: top.map(p => shorten(p.name)),
       datasets: [{ label:"GMV ($)", data: top.map(p=>p.gmv_usd),
-        backgroundColor:"#fe2c55", borderRadius:6 }]
-    },
+        backgroundColor:"#fe2c55", borderRadius:6 }] },
     options: { ...chartOpts("$"), indexAxis: "y" }
   });
 
-  // 채널별 매출 + 손익
-  renderChannels(d);
-  renderFinance(d);
+  renderChannels(agg);
+  renderFinance(agg);
 
   // 제품 표
-  const rows = [...prods].sort((a,b)=>(b.gmv_usd||0)-(a.gmv_usd||0)).map(p => {
+  document.getElementById("prodRange").textContent = agg.hasProducts ? "" : "(이 기간 제품 데이터 없음)";
+  const rows = [...agg.products].sort((a,b)=>(b.gmv_usd||0)-(a.gmv_usd||0)).map(p => {
+    const stock = sbn[p.name];
     let badge = `<span class="pill na">미연동</span>`;
-    if (p.stock!=null) {
-      if (p.stock<=0) badge = `<span class="pill out">품절</span>`;
-      else if (p.stock<=LOW_STOCK) badge = `<span class="pill low">부족</span>`;
+    if (stock != null) {
+      if (stock<=0) badge = `<span class="pill out">품절</span>`;
+      else if (stock<=LOW_STOCK) badge = `<span class="pill low">부족</span>`;
       else badge = `<span class="pill ok">정상</span>`;
     }
     return `<tr>
-      <td class="l"><div class="pname">${p.name}</div>${p.sku?`<div class="psku">${p.sku}</div>`:""}</td>
+      <td class="l"><div class="pname">${p.name}</div></td>
       <td>${usd(p.gmv_usd)}</td>
       <td>${num(p.orders)}</td>
       <td>${num(p.items_sold)}</td>
-      <td>${p.stock!=null?num(p.stock):"-"}</td>
+      <td>${stock!=null?num(stock):"-"}</td>
       <td>${badge}</td>
     </tr>`;
   }).join("");
-  document.getElementById("prodBody").innerHTML = rows;
+  document.getElementById("prodBody").innerHTML = rows ||
+    `<tr><td colspan="6" class="empty">선택한 기간에 제품별 데이터가 없습니다.</td></tr>`;
 
   document.getElementById("footer").textContent =
-    `TikTok Shop 대시보드 · ${prods.length}개 제품 · 자동 업데이트`;
+    `TikTok Shop 대시보드 · 누적 ${DATA.history.length}일 · 자동 업데이트`;
 }
 
-// ── 채널별 매출 ──
-function renderChannels(d) {
-  const c = d.channels;
+function renderChannels(agg) {
+  const c = agg.channels;
   const panel = document.getElementById("channelPanel");
-  if (!c) { panel.style.display = "none"; return; }
+  if (!c || !c.total_gmv) { panel.style.display = "none"; return; }
   panel.style.display = "";
   const items = [
     { key:"seller_live",   label:"Seller LIVE",  color:"#fe2c55" },
@@ -391,13 +548,12 @@ function renderChannels(d) {
        <span class="v">${usd(x.val)} · ${(x.val/sum*100).toFixed(0)}%</span></div>`).join("");
 }
 
-// ── 정산 · 손익 ──
-function renderFinance(d) {
-  const f = d.finance;
+function renderFinance(agg) {
+  const f = agg.finance;
   const panel = document.getElementById("financePanel");
   if (!f || !f.gross_sales) { panel.style.display = "none"; return; }
   panel.style.display = "";
-  document.getElementById("finRange").textContent = f.range_note ? "("+f.range_note+")" : "";
+  document.getElementById("finRange").textContent = `(${agg.start} ~ ${agg.end})`;
 
   const money = (n, signed) => {
     const cls = n < 0 ? "neg" : (signed && n > 0 ? "pos" : "");
@@ -437,7 +593,48 @@ function chartOpts(unit){
   };
 }
 
-// ---------- 잠금 해제 ----------
+// ---------- 기간 컨트롤 ----------
+function applyRange(start, end) {
+  document.getElementById("startDate").value = start;
+  document.getElementById("endDate").value = end;
+  render(aggregate(start, end));
+}
+function selectPreset(preset) {
+  activePreset = preset;
+  document.querySelectorAll("#presets button").forEach(b =>
+    b.classList.toggle("active", b.dataset.preset === preset));
+  const { start, end } = presetRange(preset);
+  applyRange(start, end);
+}
+function initControls() {
+  const { min, max } = dataDates();
+  ["startDate","endDate"].forEach(id => {
+    const el = document.getElementById(id);
+    el.min = min; el.max = max;
+    el.addEventListener("change", () => {
+      activePreset = null;
+      document.querySelectorAll("#presets button").forEach(b => b.classList.remove("active"));
+      let s = document.getElementById("startDate").value || min;
+      let e = document.getElementById("endDate").value || max;
+      if (s > e) [s, e] = [e, s];
+      render(aggregate(s, e));
+    });
+  });
+  document.querySelectorAll("#presets button").forEach(b =>
+    b.addEventListener("click", () => selectPreset(b.dataset.preset)));
+}
+
+// ---------- 진입 ----------
+function boot(data) {
+  DATA = data;
+  LOW_STOCK = data.low_stock || 30;
+  document.getElementById("shopName").textContent = (data.shop_name||"TikTok Shop");
+  initControls();
+  selectPreset("month");
+  document.getElementById("lock").style.display = "none";
+  document.getElementById("app").style.display = "block";
+}
+
 async function unlock() {
   const btn = document.getElementById("unlock");
   const err = document.getElementById("lockErr");
@@ -445,10 +642,8 @@ async function unlock() {
   btn.disabled = true; err.textContent = "불러오는 중...";
   try {
     const data = await loadData(pw);
-    render(data);
+    boot(data);
     err.textContent = "";
-    document.getElementById("lock").style.display = "none";
-    document.getElementById("app").style.display = "block";
   } catch(e) {
     err.textContent = "❌ 비밀번호가 틀리거나 데이터를 읽을 수 없습니다.";
     btn.disabled = false;
@@ -457,16 +652,11 @@ async function unlock() {
 document.getElementById("unlock").addEventListener("click", unlock);
 document.getElementById("pw").addEventListener("keydown", e => { if(e.key==="Enter") unlock(); });
 
-// 로컬 개발: 평문 data 파일만 있고 암호화 파일이 없으면 비번 없이 자동 진입
+// 로컬 개발: 평문 data 파일만 있으면 비번 없이 자동 진입
 (async () => {
   const enc = await tryFetch("data.enc.json");
   if (!enc) {
-    try {
-      const data = await loadData("");
-      render(data);
-      document.getElementById("lock").style.display = "none";
-      document.getElementById("app").style.display = "block";
-    } catch(e){ /* 잠금 화면 유지 */ }
+    try { boot(await loadData("")); } catch(e){ /* 잠금 유지 */ }
   }
 })();
 </script>

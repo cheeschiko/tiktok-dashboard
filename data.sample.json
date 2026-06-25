@@ -1,73 +1,67 @@
 {
-  "updated_at": "2026-06-18T10:00:00+09:00",
-  "shop_name": "에센허브 US",
+  "schema": 2,
+  "updated_at": "2026-06-24T10:30:00+09:00",
+  "shop_name": "에센허브 US (샘플)",
   "currency": "USD",
   "fx_rate": 1378.5,
-  "fx_date": "2026-06-18",
-  "summary": {
-    "period_start": "2026-06-01",
-    "period_end": "2026-06-17",
-    "month_net_sales_usd": 18452.34,
-    "month_gmv_usd": 21980.5,
-    "month_orders": 412,
-    "month_items_sold": 689,
-    "today_net_sales_usd": 1043.22,
-    "days_elapsed": 17,
-    "days_in_month": 30
+  "fx_date": "2026-06-24",
+  "low_stock": 30,
+  "product_accum_start": "2026-06-20",
+  "today": "2026-06-23",
+  "stock_by_name": {
+    "EssenHerb Vitamin C Brightening Serum 30ml": 320,
+    "EssenHerb Retinol Night Cream 50ml": 12,
+    "EssenHerb Niacinamide Pore Serum 30ml": 0,
+    "EssenHerb Centella Soothing Toner 200ml": 210
   },
-  "channels": {
-    "total_gmv": 21980.5,
-    "seller_live": 8420.3,
-    "seller_video": 5210.6,
-    "creator": 4980.4,
-    "product_card": 2890.2,
-    "other": 479.0
-  },
-  "finance": {
-    "range_note": "이번달",
-    "gross_sales": 23950.8,
-    "seller_discount": -1850.5,
-    "refund": -1010.4,
-    "net_product_sales": 18452.34,
-    "total_order_cost": -6320.75,
-    "contribution_margin": 12131.59,
-    "settled_amount": 11820.4,
-    "ad_promo_spend": 1240.6,
-    "cost_items": [
-      { "name": "배송비 (TikTok Shop)", "amount": -3980.15 },
-      { "name": "제휴 수수료", "amount": -890.83 },
-      { "name": "프로모션 수수료", "amount": -740.6 },
-      { "name": "제휴 광고 수수료", "amount": -420.0 },
-      { "name": "캠페인 서비스 수수료", "amount": -80.0 },
-      { "name": "환불 처리 수수료", "amount": -28.17 }
-    ]
-  },
-  "daily": [
-    { "date": "2026-06-01", "net_sales_usd": 820.5, "orders": 18 },
-    { "date": "2026-06-02", "net_sales_usd": 654.2, "orders": 15 },
-    { "date": "2026-06-03", "net_sales_usd": 1120.8, "orders": 24 },
-    { "date": "2026-06-04", "net_sales_usd": 980.0, "orders": 21 },
-    { "date": "2026-06-05", "net_sales_usd": 1340.6, "orders": 29 },
-    { "date": "2026-06-06", "net_sales_usd": 1560.1, "orders": 33 },
-    { "date": "2026-06-07", "net_sales_usd": 1410.4, "orders": 30 },
-    { "date": "2026-06-08", "net_sales_usd": 890.3, "orders": 19 },
-    { "date": "2026-06-09", "net_sales_usd": 760.7, "orders": 17 },
-    { "date": "2026-06-10", "net_sales_usd": 1205.5, "orders": 26 },
-    { "date": "2026-06-11", "net_sales_usd": 1330.9, "orders": 28 },
-    { "date": "2026-06-12", "net_sales_usd": 1488.2, "orders": 31 },
-    { "date": "2026-06-13", "net_sales_usd": 1620.0, "orders": 35 },
-    { "date": "2026-06-14", "net_sales_usd": 1390.4, "orders": 30 },
-    { "date": "2026-06-15", "net_sales_usd": 940.8, "orders": 20 },
-    { "date": "2026-06-16", "net_sales_usd": 855.2, "orders": 18 },
-    { "date": "2026-06-17", "net_sales_usd": 1043.22, "orders": 22 }
-  ],
-  "products": [
-    { "name": "EssenHerb Vitamin C Brightening Serum 30ml", "sku": "EH-VCS-30", "gmv_usd": 5240.5, "orders": 142, "items_sold": 198, "stock": 320 },
-    { "name": "EssenHerb Hyaluronic Acid Moisturizer 50ml", "sku": "EH-HAM-50", "gmv_usd": 3890.2, "orders": 98, "items_sold": 121, "stock": 45 },
-    { "name": "EssenHerb Retinol Night Cream 50ml", "sku": "EH-RNC-50", "gmv_usd": 2980.0, "orders": 74, "items_sold": 88, "stock": 12 },
-    { "name": "EssenHerb Centella Soothing Toner 200ml", "sku": "EH-CST-200", "gmv_usd": 2105.8, "orders": 60, "items_sold": 95, "stock": 210 },
-    { "name": "EssenHerb Niacinamide Pore Serum 30ml", "sku": "EH-NPS-30", "gmv_usd": 1760.4, "orders": 41, "items_sold": 52, "stock": 0 },
-    { "name": "EssenHerb Snail Mucin Essence 100ml", "sku": "EH-SME-100", "gmv_usd": 1320.0, "orders": 33, "items_sold": 40, "stock": 88 },
-    { "name": "EssenHerb Cica Cream Travel Kit", "sku": "EH-CCT-KIT", "gmv_usd": 655.4, "orders": 18, "items_sold": 22, "stock": 33 }
+  "history": [
+    { "date": "2026-05-30", "net_sales_usd": 410.5,
+      "finance": { "net_sales_usd": 410.5, "gross_sales": 520.0, "seller_discount": -60.0, "refund": -49.5, "net_product_sales": 410.5, "total_order_cost": -150.0, "contribution_margin": 260.5, "settled_amount": 250.0, "ad_promo_spend": 35.0, "cost_items": [{"name":"배송비 (TikTok Shop)","amount":-90.0},{"name":"제휴 수수료","amount":-35.0}] } },
+    { "date": "2026-05-31", "net_sales_usd": 455.2,
+      "finance": { "net_sales_usd": 455.2, "gross_sales": 560.0, "seller_discount": -55.0, "refund": -49.8, "net_product_sales": 455.2, "total_order_cost": -160.0, "contribution_margin": 295.2, "settled_amount": 280.0, "ad_promo_spend": 40.0, "cost_items": [{"name":"배송비 (TikTok Shop)","amount":-95.0},{"name":"제휴 수수료","amount":-40.0}] } },
+    { "date": "2026-06-01", "net_sales_usd": 820.5,
+      "finance": { "net_sales_usd": 820.5, "gross_sales": 980.0, "seller_discount": -90.0, "refund": -69.5, "net_product_sales": 820.5, "total_order_cost": -260.0, "contribution_margin": 560.5, "settled_amount": 540.0, "ad_promo_spend": 60.0, "cost_items": [{"name":"배송비 (TikTok Shop)","amount":-160.0},{"name":"제휴 수수료","amount":-60.0}] } },
+    { "date": "2026-06-10", "net_sales_usd": 1205.5,
+      "finance": { "net_sales_usd": 1205.5, "gross_sales": 1400.0, "seller_discount": -110.0, "refund": -84.5, "net_product_sales": 1205.5, "total_order_cost": -360.0, "contribution_margin": 845.5, "settled_amount": 800.0, "ad_promo_spend": 90.0, "cost_items": [{"name":"배송비 (TikTok Shop)","amount":-220.0},{"name":"제휴 수수료","amount":-90.0}] } },
+    { "date": "2026-06-18", "net_sales_usd": 855.2,
+      "finance": { "net_sales_usd": 855.2, "gross_sales": 1010.0, "seller_discount": -95.0, "refund": -59.8, "net_product_sales": 855.2, "total_order_cost": -270.0, "contribution_margin": 585.2, "settled_amount": 560.0, "ad_promo_spend": 65.0, "cost_items": [{"name":"배송비 (TikTok Shop)","amount":-170.0},{"name":"제휴 수수료","amount":-65.0}] } },
+    { "date": "2026-06-19", "net_sales_usd": 943.0,
+      "finance": { "net_sales_usd": 943.0, "gross_sales": 1120.0, "seller_discount": -100.0, "refund": -77.0, "net_product_sales": 943.0, "total_order_cost": -300.0, "contribution_margin": 643.0, "settled_amount": 610.0, "ad_promo_spend": 70.0, "cost_items": [{"name":"배송비 (TikTok Shop)","amount":-190.0},{"name":"제휴 수수료","amount":-70.0}] } },
+    { "date": "2026-06-20", "net_sales_usd": 1100.0,
+      "finance": { "net_sales_usd": 1100.0, "gross_sales": 1300.0, "seller_discount": -110.0, "refund": -90.0, "net_product_sales": 1100.0, "total_order_cost": -340.0, "contribution_margin": 760.0, "settled_amount": 720.0, "ad_promo_spend": 80.0, "cost_items": [{"name":"배송비 (TikTok Shop)","amount":-210.0},{"name":"제휴 수수료","amount":-80.0}] },
+      "orders": 26, "items_sold": 34,
+      "channels": { "total_gmv": 1290.0, "seller_live": 520.0, "seller_video": 330.0, "creator": 280.0, "product_card": 160.0, "other": 0.0 },
+      "products": [
+        { "name": "EssenHerb Vitamin C Brightening Serum 30ml", "gmv_usd": 640.0, "orders": 14, "items_sold": 18, "ch_seller_live": 300.0, "ch_seller_video": 180.0, "ch_creator": 100.0, "ch_product_card": 60.0 },
+        { "name": "EssenHerb Retinol Night Cream 50ml", "gmv_usd": 410.0, "orders": 8, "items_sold": 11, "ch_seller_live": 160.0, "ch_seller_video": 110.0, "ch_creator": 100.0, "ch_product_card": 40.0 },
+        { "name": "EssenHerb Niacinamide Pore Serum 30ml", "gmv_usd": 240.0, "orders": 4, "items_sold": 5, "ch_seller_live": 60.0, "ch_seller_video": 40.0, "ch_creator": 80.0, "ch_product_card": 60.0 }
+      ] },
+    { "date": "2026-06-21", "net_sales_usd": 980.0,
+      "finance": { "net_sales_usd": 980.0, "gross_sales": 1160.0, "seller_discount": -100.0, "refund": -80.0, "net_product_sales": 980.0, "total_order_cost": -300.0, "contribution_margin": 680.0, "settled_amount": 650.0, "ad_promo_spend": 72.0, "cost_items": [{"name":"배송비 (TikTok Shop)","amount":-185.0},{"name":"제휴 수수료","amount":-72.0}] },
+      "orders": 22, "items_sold": 29,
+      "channels": { "total_gmv": 1150.0, "seller_live": 440.0, "seller_video": 300.0, "creator": 250.0, "product_card": 160.0, "other": 0.0 },
+      "products": [
+        { "name": "EssenHerb Vitamin C Brightening Serum 30ml", "gmv_usd": 560.0, "orders": 12, "items_sold": 15, "ch_seller_live": 260.0, "ch_seller_video": 160.0, "ch_creator": 90.0, "ch_product_card": 50.0 },
+        { "name": "EssenHerb Centella Soothing Toner 200ml", "gmv_usd": 360.0, "orders": 7, "items_sold": 10, "ch_seller_live": 120.0, "ch_seller_video": 90.0, "ch_creator": 90.0, "ch_product_card": 60.0 },
+        { "name": "EssenHerb Retinol Night Cream 50ml", "gmv_usd": 230.0, "orders": 3, "items_sold": 4, "ch_seller_live": 60.0, "ch_seller_video": 50.0, "ch_creator": 70.0, "ch_product_card": 50.0 }
+      ] },
+    { "date": "2026-06-22", "net_sales_usd": 1015.0,
+      "finance": { "net_sales_usd": 1015.0, "gross_sales": 1200.0, "seller_discount": -105.0, "refund": -80.0, "net_product_sales": 1015.0, "total_order_cost": -310.0, "contribution_margin": 705.0, "settled_amount": 670.0, "ad_promo_spend": 75.0, "cost_items": [{"name":"배송비 (TikTok Shop)","amount":-195.0},{"name":"제휴 수수료","amount":-75.0}] },
+      "orders": 24, "items_sold": 31,
+      "channels": { "total_gmv": 1190.0, "seller_live": 470.0, "seller_video": 310.0, "creator": 250.0, "product_card": 160.0, "other": 0.0 },
+      "products": [
+        { "name": "EssenHerb Vitamin C Brightening Serum 30ml", "gmv_usd": 600.0, "orders": 13, "items_sold": 16, "ch_seller_live": 280.0, "ch_seller_video": 170.0, "ch_creator": 95.0, "ch_product_card": 55.0 },
+        { "name": "EssenHerb Centella Soothing Toner 200ml", "gmv_usd": 350.0, "orders": 7, "items_sold": 10, "ch_seller_live": 120.0, "ch_seller_video": 85.0, "ch_creator": 85.0, "ch_product_card": 60.0 },
+        { "name": "EssenHerb Niacinamide Pore Serum 30ml", "gmv_usd": 240.0, "orders": 4, "items_sold": 5, "ch_seller_live": 70.0, "ch_seller_video": 55.0, "ch_creator": 70.0, "ch_product_card": 45.0 }
+      ] },
+    { "date": "2026-06-23", "net_sales_usd": 1043.22,
+      "finance": { "net_sales_usd": 1043.22, "gross_sales": 1240.0, "seller_discount": -110.0, "refund": -86.78, "net_product_sales": 1043.22, "total_order_cost": -320.0, "contribution_margin": 723.22, "settled_amount": 690.0, "ad_promo_spend": 78.0, "cost_items": [{"name":"배송비 (TikTok Shop)","amount":-200.0},{"name":"제휴 수수료","amount":-78.0}] },
+      "orders": 25, "items_sold": 33,
+      "channels": { "total_gmv": 1230.0, "seller_live": 490.0, "seller_video": 320.0, "creator": 260.0, "product_card": 160.0, "other": 0.0 },
+      "products": [
+        { "name": "EssenHerb Vitamin C Brightening Serum 30ml", "gmv_usd": 620.0, "orders": 14, "items_sold": 18, "ch_seller_live": 290.0, "ch_seller_video": 175.0, "ch_creator": 95.0, "ch_product_card": 60.0 },
+        { "name": "EssenHerb Centella Soothing Toner 200ml", "gmv_usd": 360.0, "orders": 7, "items_sold": 10, "ch_seller_live": 130.0, "ch_seller_video": 90.0, "ch_creator": 85.0, "ch_product_card": 55.0 },
+        { "name": "EssenHerb Retinol Night Cream 50ml", "gmv_usd": 250.0, "orders": 4, "items_sold": 5, "ch_seller_live": 70.0, "ch_seller_video": 55.0, "ch_creator": 80.0, "ch_product_card": 45.0 }
+      ] }
   ]
 }
