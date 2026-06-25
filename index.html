@@ -363,18 +363,8 @@ function aggregate(start, end) {
     };
   }
 
-  // 제품별 합산 (products 있는 날)
-  const prodDays = days.filter(d => d.products && d.products.length);
-  const pmap = {};
-  prodDays.forEach(d => d.products.forEach(p => {
-    const e = pmap[p.name] || (pmap[p.name] = {
-      name: p.name, gmv_usd: 0, orders: 0, items_sold: 0,
-      ch_seller_live: 0, ch_seller_video: 0, ch_creator: 0, ch_product_card: 0 });
-    e.gmv_usd += p.gmv_usd||0; e.orders += p.orders||0; e.items_sold += p.items_sold||0;
-    e.ch_seller_live += p.ch_seller_live||0; e.ch_seller_video += p.ch_seller_video||0;
-    e.ch_creator += p.ch_creator||0; e.ch_product_card += p.ch_product_card||0;
-  }));
-  const products = Object.values(pmap).map(p => ({...p, gmv_usd: r2(p.gmv_usd)}));
+  // 제품별: 월별 MTD(누적) 스냅샷의 차이로 구간 복원
+  const { products, anySnap } = productsForRange(start, end);
 
   // 채널 합산
   const ch = { seller_live:0, seller_video:0, creator:0, product_card:0 };
@@ -396,11 +386,71 @@ function aggregate(start, end) {
     gmvTotal: r2(gmvTotal),
     orders: products.reduce((a,p)=>a+p.orders, 0),
     items: products.reduce((a,p)=>a+p.items_sold, 0),
-    hasProducts: prodDays.length > 0,
+    hasProducts: anySnap,
     elapsed: netSeries.length,
   };
 }
 const r2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+
+// ---- 제품 MTD 스냅샷 → 임의 구간 복원 (월별 누적 차이) ----
+function snapMap(entry) {
+  const m = {};
+  (entry.products_mtd || []).forEach(p => { m[p.name] = p; });
+  return m;
+}
+function latestSnapOnOrBefore(dateStr, monthKey) {
+  let best = null;
+  DATA.history.forEach(d => {
+    if (!d.products_mtd || d.date.slice(0,7) !== monthKey) return;
+    if (d.date <= dateStr && (!best || d.date > best.date)) best = d;
+  });
+  return best;
+}
+function productsForRange(start, end) {
+  const result = {};
+  const fields = ["gmv_usd","orders","items_sold","ch_seller_live","ch_seller_video","ch_creator","ch_product_card"];
+  const add = (name, src, sign) => {
+    const e = result[name] || (result[name] = { name, gmv_usd:0, orders:0, items_sold:0,
+      ch_seller_live:0, ch_seller_video:0, ch_creator:0, ch_product_card:0 });
+    fields.forEach(f => { e[f] += sign * (src[f] || 0); });
+  };
+  let cur = parseIso(start); cur = new Date(cur.getFullYear(), cur.getMonth(), 1);
+  const endD = parseIso(end);
+  let anySnap = false;
+  while (cur <= endD) {
+    const monthKey = iso(cur).slice(0,7);
+    const mFirst = iso(cur);
+    const lastDom = iso(new Date(cur.getFullYear(), cur.getMonth()+1, 0));
+    const segStart = (start > mFirst) ? start : mFirst;
+    const segEnd   = (end < lastDom) ? end : lastDom;
+    const hi = latestSnapOnOrBefore(segEnd, monthKey);
+    if (hi) {
+      anySnap = true;
+      const hiMap = snapMap(hi);
+      let loMap = {};
+      if (segStart > mFirst) {
+        const lo = latestSnapOnOrBefore(addDays(segStart, -1), monthKey);
+        if (lo) loMap = snapMap(lo);
+      }
+      new Set([...Object.keys(hiMap), ...Object.keys(loMap)]).forEach(n => {
+        if (hiMap[n]) add(n, hiMap[n], 1);
+        if (loMap[n]) add(n, loMap[n], -1);
+      });
+    }
+    cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+  }
+  const products = Object.values(result).map(p => ({
+    name: p.name,
+    gmv_usd: r2(Math.max(p.gmv_usd, 0)),
+    orders: Math.max(Math.round(p.orders), 0),
+    items_sold: Math.max(Math.round(p.items_sold), 0),
+    ch_seller_live: r2(Math.max(p.ch_seller_live, 0)),
+    ch_seller_video: r2(Math.max(p.ch_seller_video, 0)),
+    ch_creator: r2(Math.max(p.ch_creator, 0)),
+    ch_product_card: r2(Math.max(p.ch_product_card, 0)),
+  })).filter(p => p.gmv_usd > 0 || p.orders > 0 || p.items_sold > 0);
+  return { products, anySnap };
+}
 
 // ---------- 렌더 ----------
 function render(agg) {
@@ -412,14 +462,14 @@ function render(agg) {
     `선택 기간 <b>${agg.start} ~ ${agg.end}</b><br>` +
     (fx ? `환율 <b>${krw(fx)}/$</b> · ` : "") + `업데이트 ${upd}`;
 
-  // 제품 누적 시작 안내
+  // 제품 누적 시작 안내 (제품·채널·오더는 누적 시작 '달'부터 집계)
   const noteEl = document.getElementById("rangeNote");
-  if (DATA.product_accum_start && DATA.product_accum_start > agg.start) {
+  const firstMonth = DATA.product_accum_start ? DATA.product_accum_start.slice(0,7) : null;
+  if (firstMonth && agg.start.slice(0,7) < firstMonth) {
     noteEl.className = "note";
     noteEl.textContent =
-      `ℹ️ 제품별·채널·오더수는 ${DATA.product_accum_start}부터 누적됩니다. ` +
-      `그 이전 구간은 순매출·손익만 표시돼요. (선택 기간 내 제품 데이터: ` +
-      `${agg.hasProducts ? "있음" : "없음"})`;
+      `ℹ️ 제품별·채널·오더수는 ${firstMonth.replace("-","년 ")}월부터 집계됩니다. ` +
+      `그 이전 달은 순매출·손익만 표시돼요.`;
   } else { noteEl.className = ""; noteEl.textContent = ""; }
 
   // 재고 알림 (현재고 기준, 기간 무관)
